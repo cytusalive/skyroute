@@ -8,6 +8,19 @@ landmark_string = ""
 for letter, landmark in landmark_choices.items():
   landmark_string += "{0} - {1}\n".format(letter, landmark)
 
+stations_under_construction = ["Waterfront"]
+def get_active_stations():
+  updated_metro = vc_metro
+  for station_under_construction in stations_under_construction:
+    for current_station, neighboring_stations in vc_metro.items():
+      if current_station != station_under_construction:
+        updated_metro[current_station] -= set(stations_under_construction)
+      else:
+        updated_metro[current_station] = set([])
+  return updated_metro
+
+
+
 def greet():
   print("Hi there and welcome to SkyRoute!")
   print("We'll help you find the shortest route between the following Vancouver landmarks:\n" + landmark_string)
@@ -58,8 +71,11 @@ def get_end():
 def new_route(start_point=None, end_point=None):
   start_point, end_point = set_start_and_end(start_point, end_point)
   shortest_route = get_route(start_point, end_point)
-  shortest_route_string = '\n'.join(shortest_route)
-  print("The shortest metro route from {0} to {1} is:\n{2}".format(start_point, end_point, shortest_route_string))
+  if type(shortest_route) != str:
+    shortest_route_string = '\n'.join(shortest_route)
+    print("The shortest metro route from {0} to {1} is:\n{2}".format(start_point, end_point, shortest_route_string))
+  else:
+    print(shortest_route)
   again = input("Would you like to see another route? Enter y/n:\n")
   if again == "y":
     show_landmarks()
@@ -76,9 +92,16 @@ def get_route(start_point, end_point):
   routes = []
   for start_station in start_stations:
     for end_station in end_stations:
-      route = bfs(vc_metro, start_station, end_station)
-      if route is not None:
-        routes.append(route)
+        metro_system = get_active_stations() if stations_under_construction else vc_metro
+        if stations_under_construction:
+            possible_route = dfs(metro_system, start_station, end_station)
+            if not possible_route:
+              return "Unfortunately, there is currently no path between {0} and {1} due to maintenance.".format(start_point, end_point)
+        route = bfs(metro_system, start_station, end_station)
+        if route is not None:
+            routes.append(route)
+  if routes == []:
+    return "You are already at the destination station!"
   shortest_route = min(routes, key=len)
   return shortest_route
 
@@ -86,6 +109,8 @@ def goodbye():
   print("Thanks for using SkyRoute!")
 
 skyroute()
+
+
 
 
 
